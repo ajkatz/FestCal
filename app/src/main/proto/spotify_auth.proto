@@ -1,0 +1,13 @@
+//syntax = "proto3";
+//
+//package com.fest.cal;
+//
+//option java_package = "com.fest.cal";
+//option java_outer_classname = "SpotifyAuthProto";
+//
+//message SpotifyAuthData {
+//  string authToken = 1;
+//  int64 expiryMs = 2;
+//  string displayName = 3;
+//  string imageUrl = 4;
+//}
