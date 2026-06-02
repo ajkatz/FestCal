@@ -3,6 +3,9 @@ import com.fest.cal.schedule.ScheduleArtist
 import com.fest.cal.schedule.SchedulePlanner
 import com.fest.cal.schedule.SetSlot
 import com.fest.cal.schedule.UnifiedSchedule
+import com.fest.cal.schedule.compat.ArtistAffinity
+import com.fest.cal.schedule.compat.CompatibilityAnalyzer
+import com.fest.cal.schedule.compat.MusicProfile
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -74,6 +77,35 @@ fun main() {
         SchedulePlanner.isConflictFree(listOf(f1.sets[0], f2.sets[0])),
         "non-overlapping plan is conflict-free",
     )
+
+    // --- compatibility ---
+    fun profile(id: String, vararg pairs: Pair<String, Float>) =
+        MusicProfile(id, pairs.map { ArtistAffinity(ScheduleArtist(it.first), it.second) })
+
+    val alice = profile("alice", "Subtronics" to 5f, "CloZee" to 4f, "Wooli" to 3f)
+    val bob = profile("bob", "subtronics" to 5f, "CloZee" to 4f, "Wooli" to 3f) // same taste, diff case
+    val carol = profile("carol", "Excision" to 5f, "Knock2" to 4f) // disjoint
+    val dave = profile("dave", "Subtronics" to 5f, "Excision" to 5f) // partial
+
+    val same = CompatibilityAnalyzer.compare(alice, bob)
+    check(same.score > 0.999f, "compat: identical taste → score ~1")
+    check(same.overlap > 0.999f, "compat: identical taste → overlap 1")
+    check(same.sharedArtists.size == 3, "compat: identical → all shared")
+
+    val none = CompatibilityAnalyzer.compare(alice, carol)
+    check(none.score == 0f && none.overlap == 0f, "compat: disjoint → score/overlap 0")
+    check(none.sharedArtists.isEmpty(), "compat: disjoint → no shared")
+
+    val partial = CompatibilityAnalyzer.compare(alice, dave)
+    check(partial.score in 0.4f..0.6f, "compat: half-overlap vectors → ~0.5")
+    check(partial.overlap == 0.25f, "compat: 1 shared of 4 → 0.25 overlap")
+    check(
+        partial.sharedArtists.map { it.key } == listOf("subtronics"),
+        "compat: shared artist matched on normalized key",
+    )
+
+    val empty = CompatibilityAnalyzer.compare(profile("x"), alice)
+    check(empty.score == 0f && empty.sharedArtists.isEmpty(), "compat: empty profile → none, no crash")
 
     if (failures == 0) {
         println("\nALL SELF-CHECKS PASSED")
