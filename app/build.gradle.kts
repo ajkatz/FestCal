@@ -72,6 +72,7 @@ android {
 
 dependencies {
     implementation(project(":colors"))
+    implementation(project(":schedule-core"))
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
