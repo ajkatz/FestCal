@@ -14,7 +14,10 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "My Application"
+rootProject.name = "FestCal"
 include(":app")
+include(":schedule-core")
 include(":colors")
+include(":platform")
 project(":colors").projectDir = file("../../AndroidKotlinCommon/colors")
+project(":platform").projectDir = file("../../AndroidKotlinCommon/platform")
