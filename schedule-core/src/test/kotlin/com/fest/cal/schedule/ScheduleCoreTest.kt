@@ -66,4 +66,28 @@ class ScheduleCoreTest {
         assertFalse(SchedulePlanner.isConflictFree(plan))
         assertTrue(SchedulePlanner.isConflictFree(listOf(f1.sets[0], f2.sets[0])))
     }
+
+    @Test fun bestPlanMaximizesWeightClashFree() {
+        val untimed = SetSlot(ScheduleArtist("Surprise"), "f1", d1)
+        val plan = SchedulePlanner.bestPlan(
+            listOf(
+                WantedSet(f1.sets[0], 5f),
+                WantedSet(f1.sets[1], 3f), // clashes f1.sets[0], lower weight → dropped
+                WantedSet(f2.sets[0], 1f),
+                WantedSet(f1.sets[2], 1f),
+                WantedSet(untimed, 2f),
+            ),
+        )
+        assertEquals(9f, plan.totalWeight, 0.001f)
+        assertEquals(listOf(f1.sets[1]), plan.dropped)
+        assertTrue(SchedulePlanner.isConflictFree(plan.chosen))
+        assertTrue(untimed in plan.chosen)
+    }
+
+    @Test fun bestPlanEqualWeightsMaximizesCount() {
+        val plan = SchedulePlanner.bestPlan(
+            listOf(WantedSet(f1.sets[0]), WantedSet(f1.sets[1]), WantedSet(f2.sets[0])),
+        )
+        assertEquals(2, plan.chosen.size)
+    }
 }

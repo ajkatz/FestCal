@@ -3,6 +3,7 @@ import com.fest.cal.schedule.ScheduleArtist
 import com.fest.cal.schedule.SchedulePlanner
 import com.fest.cal.schedule.SetSlot
 import com.fest.cal.schedule.UnifiedSchedule
+import com.fest.cal.schedule.WantedSet
 import com.fest.cal.schedule.compat.ArtistAffinity
 import com.fest.cal.schedule.compat.CompatibilityAnalyzer
 import com.fest.cal.schedule.compat.MusicProfile
@@ -106,6 +107,26 @@ fun main() {
 
     val empty = CompatibilityAnalyzer.compare(profile("x"), alice)
     check(empty.score == 0f && empty.sharedArtists.isEmpty(), "compat: empty profile → none, no crash")
+
+    // --- auto-plan optimizer ---
+    val untimedWanted = SetSlot(ScheduleArtist("Surprise"), "f1", d1) // no time
+    val wanted = listOf(
+        WantedSet(f1.sets[0], 5f), // 20:00-21:00 d1
+        WantedSet(f1.sets[1], 3f), // 20:30-21:30 d1 (clashes sets[0])
+        WantedSet(f2.sets[0], 1f), // 22:00-23:00 d1
+        WantedSet(f1.sets[2], 1f), // d2 18:00
+        WantedSet(untimedWanted, 2f),
+    )
+    val autoPlan = SchedulePlanner.bestPlan(wanted)
+    check(autoPlan.totalWeight == 9f, "plan: maximizes weight (d1 5+1, d2 1, untimed 2 = 9)")
+    check(autoPlan.dropped == listOf(f1.sets[1]), "plan: drops the lower-weight clash")
+    check(SchedulePlanner.isConflictFree(autoPlan.chosen), "plan: result is clash-free")
+    check(untimedWanted in autoPlan.chosen, "plan: untimed wanted always kept")
+
+    val equal = SchedulePlanner.bestPlan(
+        listOf(WantedSet(f1.sets[0]), WantedSet(f1.sets[1]), WantedSet(f2.sets[0])),
+    )
+    check(equal.chosen.size == 2, "plan: equal weights → maximize count (2 of 3 clashing)")
 
     if (failures == 0) {
         println("\nALL SELF-CHECKS PASSED")
